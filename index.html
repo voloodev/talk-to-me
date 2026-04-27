@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Soulmate</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" href="icon.png" type="image/png">
+
+    <style>
+        body {
+            background-color: #121212; /* Matte Black */
+            color: #ffffff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            align-items: center;
+        }
+
+        /* Profile Section */
+        .header {
+            width: 100%;
+            padding: 20px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        .profile-img {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #333, #555);
+            margin-right: 15px;
+            border: 2px solid #444;
+            display: flex; align-items: center; justify-content: center; font-size: 20px;
+        }
+        .profile-info { display: flex; flex-direction: column; }
+        .name { font-weight: bold; font-size: 18px; color: #fff; }
+        .details { font-size: 12px; color: #888; margin-top: 2px; }
+
+        /* Ad Container */
+        .ad-container {
+            margin: 15px 0;
+            width: 320px; height: 50px;
+            background: #1a1a1a;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Visualizer & Mic Area */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            position: relative;
+        }
+
+        .status-text {
+            font-size: 16px;
+            color: #aaa;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Microphone Button */
+        .mic-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mic-btn {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background-color: #121212;
+            border: 3px solid #ffffff;
+            color: #ffffff;
+            font-size: 40px;
+            cursor: pointer;
+            z-index: 10;
+            outline: none;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Pulse Animation (Multiple Blurred Colors) */
+        .pulse-ring {
+            position: absolute;
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            z-index: 1;
+            opacity: 0;
+            transition: 0.3s;
+        }
+
+        .mic-btn.active ~ .pulse-ring {
+            opacity: 1;
+            animation: multi-pulse 1.5s infinite;
+        }
+
+        @keyframes multi-pulse {
+            0% { transform: scale(1); box-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff; }
+            50% { transform: scale(1.4); box-shadow: 0 0 60px #ff007f, 0 0 100px #8a2be2, 0 0 120px #00ff00; }
+            100% { transform: scale(1.1); box-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff; opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="profile-img">👩</div>
+        <div class="profile-info">
+            <div class="name">AI Soulmate</div>
+            <div class="details">Age: 21 | Sri Lankan | +94 7X XXX XXXX</div>
+        </div>
+    </div>
+
+    <div class="ad-container">
+        <script>
+            atOptions = { 'key' : 'f61f908e237a81f863abcd56ee1ef1ab', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} };
+        </script>
+        <script src="https://www.highperformanceformat.com/f61f908e237a81f863abcd56ee1ef1ab/invoke.js"></script>
+    </div>
+
+    <div class="main-container">
+        <div class="status-text" id="status">Hold to Talk</div>
+        
+        <div class="mic-wrapper">
+            <button class="mic-btn" id="mic-btn">🎤</button>
+            <div class="pulse-ring"></div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkwLEQW8G-ENm28R2qMeR_5hBVRXfjFoE",
+            authDomain: "talk-to-me-1f57a.firebaseapp.com",
+            projectId: "talk-to-me-1f57a",
+            storageBucket: "talk-to-me-1f57a.firebasestorage.app",
+            messagingSenderId: "698878046207",
+            appId: "1:698878046207:web:2dbee851dd2dde984941ca"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Gemini & ElevenLabs
+        const GEMINI_API = "AIzaSyBjd-VTrMUMVaGfaCR1pVMaGeeMDuA-LlU";
+        const ELEVEN_KEY = "sk_c10165ba95470d51b2884d4777576c971135813ccfaf45c0";
+        const VOICE_ID = "EXAVITQu4vr4xnSDxMaL"; // Bella (Conversational female voice)
+
+        const micBtn = document.getElementById('mic-btn');
+        const statusTxt = document.getElementById('status');
+
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+
+        // Hold to talk logic
+        micBtn.onmousedown = () => startRec();
+        micBtn.ontouchstart = (e) => { e.preventDefault(); startRec(); };
+        window.onmouseup = () => stopRec();
+        window.ontouchend = () => stopRec();
+
+        function startRec() {
+            recognition.start();
+            micBtn.classList.add('active');
+            statusTxt.innerText = "Listening...";
+        }
+
+        function stopRec() {
+            recognition.stop();
+            micBtn.classList.remove('active');
+        }
+
+        recognition.onresult = async (event) => {
+            const text = event.results[0][0].transcript;
+            statusTxt.innerText = "Thinking...";
+            
+            const aiReply = await getAIResponse(text);
+            statusTxt.innerText = "Speaking...";
+            micBtn.classList.add('active');
+            await speak(aiReply);
+            
+            statusTxt.innerText = "Hold to Talk";
+            micBtn.classList.remove('active');
+        };
+
+        async function getAIResponse(userText) {
+            const prompt = "You are a bold, realistic female Sri Lankan friend. Speak in Singlish. Be caring but use slang like 'ballo' if needed. Prompt: " + userText;
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API}`, {
+                method: "POST",
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await res.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        async function speak(text) {
+            const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+                method: "POST",
+                headers: { "xi-api-key": ELEVEN_KEY, "Content-Type": "application/json" },
+                body: JSON.stringify({ text: text, model_id: "eleven_multilingual_v2" })
+            });
+            const blob = await res.blob();
+            const audio = new Audio(URL.createObjectURL(blob));
+            return new Promise(resolve => {
+                audio.onended = resolve;
+                audio.play();
+            });
+        }
+    </script>
+</body>
+</html>
