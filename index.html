@@ -4,142 +4,116 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI Soulmate</title>
-    
     <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="icon" href="icon.png" type="image/png">
 
     <style>
+        /* UI Basics */
         body {
-            background-color: #121212; /* Matte Black */
+            background-color: #0a0a0a; /* Deep Matte Black */
             color: #ffffff;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             margin: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
-            align-items: center;
         }
 
-        /* Profile Section */
+        /* Login Screen Overlay */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0a0a;
+            z-index: 1000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; text-align: center;
+        }
+        .login-box {
+            background: #1a1a1a; padding: 30px; border-radius: 20px; border: 1px solid #333; width: 85%;
+        }
+        input {
+            width: 100%; padding: 12px; margin: 10px 0; background: #111; border: 1px solid #444; color: white; border-radius: 8px;
+        }
+        .btn {
+            background: white; color: black; padding: 12px 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+
+        /* Top Header & Menu */
         .header {
-            width: 100%;
-            padding: 20px;
-            background: #1a1a1a;
-            border-bottom: 1px solid #333;
-            display: flex;
-            align-items: center;
-            box-sizing: border-box;
+            padding: 15px 20px; background: #111; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222;
         }
-        .profile-img {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #333, #555);
-            margin-right: 15px;
-            border: 2px solid #444;
-            display: flex; align-items: center; justify-content: center; font-size: 20px;
-        }
-        .profile-info { display: flex; flex-direction: column; }
-        .name { font-weight: bold; font-size: 18px; color: #fff; }
-        .details { font-size: 12px; color: #888; margin-top: 2px; }
+        .app-logo { width: 40px; height: 40px; border-radius: 10px; }
+        .menu-icon { font-size: 24px; cursor: pointer; }
 
-        /* Ad Container */
-        .ad-container {
-            margin: 15px 0;
-            width: 320px; height: 50px;
-            background: #1a1a1a;
-            display: flex; align-items: center; justify-content: center;
+        /* Side Menu (Profile Info) */
+        #side-menu {
+            position: fixed; right: -300px; top: 0; width: 280px; height: 100%;
+            background: #1a1a1a; z-index: 500; transition: 0.3s; padding: 20px; box-sizing: border-box;
+            border-left: 1px solid #333;
         }
+        #side-menu.active { right: 0; }
+        .profile-title { border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; }
 
-        /* Visualizer & Mic Area */
-        .main-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            position: relative;
-        }
-
-        .status-text {
-            font-size: 16px;
-            color: #aaa;
-            margin-bottom: 30px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        /* Microphone Button */
-        .mic-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
+        /* Main AI Interface */
+        .main-ui { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .status-text { color: #888; margin-bottom: 40px; text-transform: uppercase; font-size: 14px; letter-spacing: 2px; }
+        
         .mic-btn {
-            width: 100px; height: 100px;
-            border-radius: 50%;
-            background-color: #121212;
-            border: 3px solid #ffffff;
-            color: #ffffff;
-            font-size: 40px;
-            cursor: pointer;
-            z-index: 10;
-            outline: none;
-            display: flex; align-items: center; justify-content: center;
-            transition: transform 0.2s;
-            -webkit-tap-highlight-color: transparent;
+            width: 120px; height: 120px; border-radius: 50%; background: #0a0a0a; border: 2px solid white;
+            color: white; font-size: 45px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;
+            transition: 0.2s; -webkit-tap-highlight-color: transparent;
         }
 
-        /* Pulse Animation (Multiple Blurred Colors) */
-        .pulse-ring {
-            position: absolute;
-            width: 100px; height: 100px;
-            border-radius: 50%;
-            z-index: 1;
-            opacity: 0;
-            transition: 0.3s;
+        /* Pulse Animation */
+        .pulse {
+            position: absolute; width: 120px; height: 120px; border-radius: 50%;
+            z-index: 1; opacity: 0; pointer-events: none;
+        }
+        .mic-btn.active + .pulse {
+            opacity: 1; animation: multi-color-pulse 1.5s infinite;
         }
 
-        .mic-btn.active ~ .pulse-ring {
-            opacity: 1;
-            animation: multi-pulse 1.5s infinite;
-        }
-
-        @keyframes multi-pulse {
+        @keyframes multi-color-pulse {
             0% { transform: scale(1); box-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff; }
-            50% { transform: scale(1.4); box-shadow: 0 0 60px #ff007f, 0 0 100px #8a2be2, 0 0 120px #00ff00; }
+            50% { transform: scale(1.5); box-shadow: 0 0 60px #ff007f, 0 0 100px #8a2be2, 0 0 140px #00ff00; }
             100% { transform: scale(1.1); box-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff; opacity: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="profile-img">👩</div>
-        <div class="profile-info">
-            <div class="name">AI Soulmate</div>
-            <div class="details">Age: 21 | Sri Lankan | +94 7X XXX XXXX</div>
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>Verify Your Number</h2>
+            <p style="font-size: 12px; color: #888;">Weekly Subscription: Rs. 100 will be charged</p>
+            <input type="text" id="user-name" placeholder="Name">
+            <input type="number" id="user-age" placeholder="Age">
+            <input type="text" id="user-phone" placeholder="+94 7X XXX XXXX">
+            <button class="btn" onclick="verifyLogin()">Verify & Login</button>
         </div>
     </div>
 
-    <div class="ad-container">
-        <script>
-            atOptions = { 'key' : 'f61f908e237a81f863abcd56ee1ef1ab', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} };
-        </script>
-        <script src="https://www.highperformanceformat.com/f61f908e237a81f863abcd56ee1ef1ab/invoke.js"></script>
+    <div class="header">
+        <img src="icon.png" class="app-logo" alt="App Icon">
+        <div class="menu-icon" onclick="toggleMenu()">☰</div>
     </div>
 
-    <div class="main-container">
-        <div class="status-text" id="status">Hold to Talk</div>
-        
-        <div class="mic-wrapper">
+    <div id="side-menu">
+        <div class="profile-title">PROFILE DETAILS</div>
+        <p>Name: <span id="disp-name"></span></p>
+        <p>Age: <span id="disp-age"></span></p>
+        <p>Phone: <span id="disp-phone"></span></p>
+        <p>Status: Active Subscriber</p>
+        <br>
+        <button class="btn" onclick="toggleMenu()" style="width: 100%;">Close</button>
+    </div>
+
+    <div class="main-ui">
+        <div class="status-text" id="status">Tap to Talk</div>
+        <div style="position: relative; display: flex; align-items: center; justify-content: center;">
             <button class="mic-btn" id="mic-btn">🎤</button>
-            <div class="pulse-ring"></div>
+            <div class="pulse"></div>
         </div>
     </div>
 
@@ -147,7 +121,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // Firebase Config
+        // Firebase Configuration (Updated with your keys)
         const firebaseConfig = {
             apiKey: "AIzaSyDkwLEQW8G-ENm28R2qMeR_5hBVRXfjFoE",
             authDomain: "talk-to-me-1f57a.firebaseapp.com",
@@ -159,51 +133,68 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Gemini & ElevenLabs
         const GEMINI_API = "AIzaSyBjd-VTrMUMVaGfaCR1pVMaGeeMDuA-LlU";
         const ELEVEN_KEY = "sk_c10165ba95470d51b2884d4777576c971135813ccfaf45c0";
-        const VOICE_ID = "EXAVITQu4vr4xnSDxMaL"; // Bella (Conversational female voice)
+        const VOICE_ID = "EXAVITQu4vr4xnSDxMaL"; // Bella
 
+        // Login Logic
+        function verifyLogin() {
+            const name = document.getElementById('user-name').value;
+            const age = document.getElementById('user-age').value;
+            const phone = document.getElementById('user-phone').value;
+
+            if(name && age && phone) {
+                document.getElementById('disp-name').innerText = name;
+                document.getElementById('disp-age').innerText = age;
+                document.getElementById('disp-phone').innerText = phone;
+                
+                // Hide Login Screen
+                document.getElementById('login-screen').style.display = 'none';
+                
+                // Save to Firebase (User Registration)
+                db.collection("users").doc(phone).set({ name, age, phone, subbed: true });
+            } else {
+                alert("Please fill all details!");
+            }
+        }
+
+        function toggleMenu() {
+            document.getElementById('side-menu').classList.toggle('active');
+        }
+
+        // Voice Engine
         const micBtn = document.getElementById('mic-btn');
         const statusTxt = document.getElementById('status');
-
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = 'en-US';
 
-        // Hold to talk logic
-        micBtn.onmousedown = () => startRec();
-        micBtn.ontouchstart = (e) => { e.preventDefault(); startRec(); };
-        window.onmouseup = () => stopRec();
-        window.ontouchend = () => stopRec();
-
-        function startRec() {
+        micBtn.onclick = () => {
             recognition.start();
             micBtn.classList.add('active');
             statusTxt.innerText = "Listening...";
-        }
-
-        function stopRec() {
-            recognition.stop();
-            micBtn.classList.remove('active');
-        }
+        };
 
         recognition.onresult = async (event) => {
-            const text = event.results[0][0].transcript;
+            const userSpeech = event.results[0][0].transcript;
+            micBtn.classList.remove('active');
             statusTxt.innerText = "Thinking...";
-            
-            const aiReply = await getAIResponse(text);
+
+            const aiReply = await getAIResponse(userSpeech);
             statusTxt.innerText = "Speaking...";
             micBtn.classList.add('active');
             await speak(aiReply);
             
-            statusTxt.innerText = "Hold to Talk";
+            statusTxt.innerText = "Tap to Talk";
             micBtn.classList.remove('active');
         };
 
         async function getAIResponse(userText) {
-            const prompt = "You are a bold, realistic female Sri Lankan friend. Speak in Singlish. Be caring but use slang like 'ballo' if needed. Prompt: " + userText;
+            // Personality Prompt
+            const prompt = `System: You are a real Sri Lankan woman, very emotional, bold, and realistic. You speak Singlish. If the user is boring or annoying, get angry and use 'ballo' or 'balliye'. Do not act like an AI. Be like a real toxic/caring friend. User says: ${userText}`;
+            
             const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API}`, {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
             const data = await res.json();
